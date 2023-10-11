@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, People, FavoritePeople
+from models import db, User, People, FavoritePeople, Planets
 from flask_bcrypt import Bcrypt
 
 from flask_jwt_extended import create_access_token
@@ -341,6 +341,15 @@ def post_favorite_people_register_protected():
     except Exception as error:
         print(str(error))
         return jsonify(str(error)), 400
+
+@app.route('/planets', methods=['GET'])
+def handle_hello():
+
+    response_body = {
+        "msg": "Hello, this is your GET /user response "
+    }
+
+    return jsonify(response_body), 200
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':

@@ -59,7 +59,32 @@ class People(db.Model):
             "age": self.age,
             "gender": self.gender
         }
-    
 
+class Planets(db.Model):
+    __tablename__ = 'planets'
+    id = db.Column(db.Integer,  primary_key=True)
+    name= db.Column(db.String(30), unique=True, nullable=False)
+    diameter= db.Column(db.String(30), unique=False, nullable=True)
+    rotation_period= db.Column(db.String(30), unique=False, nullable=False)
+    orbital_period= db.Column(db.String(30), unique=True, nullable=True)
+    gravity= db.Column(db.Float, unique=True, nullable=True)
+    population= db.Column(db.Integer, unique=True, nullable=True)
+    climate= db.Column(db.String(30), unique=True, nullable=True)
+    terrain= db.Column(db.String(50), unique=True, nullable=True)
 
+    def __repr__(self):
+        return '<Planets %r>' % self.name
 
+    def serialize(self):
+        return{
+
+            "id": self.id,
+            "name": self.name,
+            "diameter":self.diameter,
+            "rotation_period": self.rotation_period,
+            "orbital_period": self.orbital_period,
+            "gravity": self.gravity,
+            "population": self.population,
+            "climate": self.climate, 
+            "terrain": self.terrain 
+        }
