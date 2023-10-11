@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, People, FavoritePeople, Planets
+from models import db, User, People, FavoritePeople, Planets, FavoritePlanets
 from flask_bcrypt import Bcrypt
 
 from flask_jwt_extended import create_access_token
@@ -343,13 +343,224 @@ def post_favorite_people_register_protected():
         return jsonify(str(error)), 400
 
 @app.route('/planets', methods=['GET'])
-def handle_hello():
+def get_planets():
+    search = Planets.query.all()    
+    search_serialize = list(map(lambda x: x.serialize(), search)) # search.map((item)=>{item.serialize()})
+    print("valor de search_serialize ", search_serialize)
+    
+    return jsonify(search_serialize), 200
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/planets/<int:id>', methods=['GET'])
+def get_planets_id(id):
+    try:
+        search = Planets.query.get(id)   
+        search_serialize = search.serialize()
+        print("valor de search_serialize ", search_serialize)    
 
-    return jsonify(response_body), 200
+        return jsonify(search_serialize), 200
+
+    except Exception as error:
+        print(error)
+        return jsonify({"message":str(error)}), 500
+    
+@app.route('/planets', methods=['POST'])
+def add_planets():
+    try:
+        body = request.get_json()
+        
+        new_register = Planets(
+            name= body["name"],
+            diameter= body["diameter"],
+            rotation_period= body["rotation_period"],
+            orbital_period= body["orbital_period"],
+            gravity= body["gravity"],
+            population= body["population"],
+            climate= body["climate"],
+            terrain= body["terrain"]
+        )
+
+        db.session.add(new_register)
+        db.session.commit()
+
+        print("body es: ", body)
+
+        return jsonify({"message":"El personaje se agregó"}), 200
+    except Exception as error:
+        print(error)
+        return jsonify({"message":str(error)}), 500
+    
+@app.route('/planets/<int:id>', methods=['PUT'])
+def edit_planets_id(id):
+    try:
+        body = request.get_json()
+        search = Planets.query.get(id)   
+
+        search.name = body["name"],
+        search.diameter = body["diameter"],
+        search.rotation_period =  body["rotation_period"],
+        search.orbital_period =  body["orbital_period"],
+        search.gravity =  body["gravity"],
+        search.population =  body["population"],
+        search.climate =  body["climate"],
+        search.terrain = body["terrain"]
+        db.session.commit()           
+
+        return jsonify({"message":"se editó correctamente"}), 200
+
+    except Exception as error:
+        print(error)
+        return jsonify({"message":str(error)}), 500
+    
+@app.route('/planets/<int:id>', methods=['DELETE'])
+def delete_planets_id(id):
+    try:
+        
+        search = Planets.query.get(id)   
+        db.session.delete(search)
+        db.session.commit()           
+
+        return jsonify({"message":"se eliminó correctamente"}), 200
+
+    except Exception as error:
+        print(error)
+        return jsonify({"message":str(error)}), 500
+    
+@app.route('/favorite-planets', methods=['GET'])
+def get_favorite_planets():
+    search = FavoritePlanets.query.all()    
+    search_serialize = list(map(lambda x: x.serialize(), search)) # search.map((item)=>{item.serialize()})
+    print("valor de search_serialize ", search_serialize)
+    
+    return jsonify(search_serialize), 200
+
+@app.route('/favorite-planets-user', methods=['POST'])
+def get_favorite_planets_user():
+    '''
+    Esta función va a devolver la lista de personajes favoritos de un usuario en particular
+    '''
+    body = request.get_json()
+    print("body: ", body)
+    email = body["email"]
+
+    try:
+        search = User.query.filter_by(email=email).first()
+        search = search.serialize()
+        print("search: ", search)
+
+        id = search["id"]
+
+        search2 = FavoritePlanets.query.filter_by(user_id = id).all()
+
+        search2_serialize = list(map(lambda x: x.serialize(), search2))
+        print("resultado final: ", search2_serialize)
+
+        return jsonify(search2_serialize), 200
+    
+    except Exception as error:
+        print(str(error))
+        return jsonify(str(error)), 400
+    
+@app.route('/favorite-planets-user-id', methods=['POST'])
+def get_favorite_planets_user_id():
+    '''
+    Esta función va a devolver la lista de personajes favoritos de un usuario en particular por su id
+    '''
+    body = request.get_json()
+    print("body: ", body)
+    id = body["id"]
+
+    try:      
+        search2 = FavoritePlanets.query.filter_by(user_id = id).all()
+        search2_serialize = list(map(lambda x: x.serialize(), search2))
+        print("resultado final: ", search2_serialize)
+        
+        return jsonify(search2_serialize), 200
+    
+    except Exception as error:
+        print(str(error))
+        return jsonify(str(error)), 400   
+    
+
+@app.route('/favorite-planets-register', methods=['POST'])
+def post_favorite_planets_register():
+    '''
+    Esta función va a devolver un mensaje si se registró correctamente un favorito de un usuario
+    '''
+    body = request.get_json()
+    print("body: ", body)
+    id = body["id"]
+    planets_id = body["planets_id"]
+
+    try:      
+        search2 = FavoritePlanets.query.filter_by(user_id = id, planets_id=planets_id).first()
+        if search2:
+            return jsonify({"message":"ya existe ese favorito"}), 409
+        
+        new_register = FavoritePlanets(user_id=id, planets_id=planets_id)
+        db.session.add(new_register)
+        db.session.commit()
+               
+        return jsonify({"message":"Favorito registrado"}), 201
+    
+    except Exception as error:
+        print(str(error))
+        return jsonify(str(error)), 400  
+
+@app.route('/favorite-planets-delete', methods=['DELETE'])
+def post_favorite_planets_delete():
+    '''
+    Esta función va a eliminar un favorito de un usuario por su id
+    '''
+    body = request.get_json()
+    print("body: ", body)
+    id = body["id"]
+    planets_id = body["planets_id"]
+
+    try:      
+        search2 = FavoritePlanets.query.filter_by(user_id = id, planets_id=planets_id).first()
+        if not search2:
+            return jsonify({"message":"no existe el registro a eliminar"}), 409
+        
+        db.session.delete(search2)
+        db.session.commit()
+               
+        return jsonify({"message":"Favorito eliminado"}), 203
+    
+    except Exception as error:
+        print(str(error))
+        return jsonify(str(error)), 400 
+
+@app.route('/favorite-planets-register-protected', methods=['POST'])
+@jwt_required()
+def post_favorite_planets_register_protected():
+    '''
+    Esta función va a devolver un mensaje si se registró correctamente un favorito de un usuario
+    '''
+    body = request.get_json()
+    print("body: ", body)
+
+    #identifico al usuario a través del token
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(email=current_user).first()
+    id = user.serialize()["id"]
+
+    planets_id = body["planets_id"]
+
+    try:      
+        search2 = FavoritePlanets.query.filter_by(user_id = id, planets_id=planets_id).first()
+        if search2:
+            return jsonify({"message":"ya existe ese favorito"}), 409
+        
+        new_register = FavoritePlanets(user_id=id, planets_id=planets_id)
+        db.session.add(new_register)
+        db.session.commit()
+               
+        return jsonify({"message":"Favorito registrado"}), 201
+    
+    except Exception as error:
+        print(str(error))
+        return jsonify(str(error)), 400  
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':

@@ -16,6 +16,21 @@ class FavoritePeople(db.Model):
             "email":  User.query.get(self.user_id).serialize()["email"],
             "people_name": People.query.get(self.people_id).serialize()["name"]
         }
+    
+class FavoritePlanets(db.Model):
+    __tablename__ = "favoriteplanets"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    planets_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "planets_id": self.planets_id,
+            "email":  User.query.get(self.user_id).serialize()["email"],
+            "planets_name": Planets.query.get(self.planets_id).serialize()["name"]
+        }
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -71,6 +86,7 @@ class Planets(db.Model):
     population= db.Column(db.Integer, unique=True, nullable=True)
     climate= db.Column(db.String(30), unique=True, nullable=True)
     terrain= db.Column(db.String(50), unique=True, nullable=True)
+    favorite_planets = db.relationship(FavoritePlanets, backref = 'planets')
 
     def __repr__(self):
         return '<Planets %r>' % self.name
